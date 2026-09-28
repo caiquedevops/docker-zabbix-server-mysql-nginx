@@ -1,0 +1,49 @@
+# Criação da Network para os containers
+networks:
+    zabbix-nt:
+
+volumes:
+    mysql-bd:
+    
+# Criando os containers
+services:
+    mysql:
+        image: mysql:8.4
+        command:
+            - --log-bin-trust-function-creators=1
+        environment:
+            MYSQL_ROOT_PASSWORD: 8142
+            MYSQL_USER: zabbix
+            MYSQL_PASSWORD: zabbix
+            MYSQL_DATABASE: zabbix
+        networks:
+            - zabbix-nt
+        volumes:
+            - mysql-bd:/var/lib/mysql
+    
+    zabbix-server:
+        image: zabbix/zabbix-server-mysql:ubuntu-latest
+        init: true
+        depends_on:
+            - mysql
+        environment:
+            DB_SERVER_HOST: mysql
+            MYSQL_USER: zabbix
+            MYSQL_PASSWORD: zabbix
+        networks:
+            - zabbix-nt
+
+    zabbix-web-nginx:
+        image: zabbix/zabbix-web-nginx-mysql:ubuntu-latest
+        depends_on:
+            - mysql
+        environment:
+            DB_SERVER_HOST: mysql
+            MYSQL_USER: zabbix
+            MYSQL_PASSWORD: zabbix
+            ZBX_SERVER_HOST: zabbix-server
+            PHP_TZ: america/bahia
+        networks:
+            - zabbix-nt
+        ports:
+            - 8080:8080
